@@ -1,5 +1,8 @@
 Revision history for Perl module Unicode::Transform.
 
+0.31  Sat Nov 15 21:22:22 2003
+    - doc fix: should be chr_utf8mod() and ord_utf8mod(), but not /mode\z/.
+
 0.30  Sat Nov 15 15:47:29 2003
     - new: 8 x 8 conversion functions, <something>_to_<something>.
       (added 50 functions; 14 functions, named unicode_to_<something>

@@ -3,12 +3,14 @@ package Unicode::Transform;
 require 5.006;
 
 use strict;
+no warnings 'utf8';
+
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
 require Exporter;
 require DynaLoader;
 
-$VERSION = '0.30';
+$VERSION = '0.31';
 
 @ISA = qw(Exporter DynaLoader);
 
@@ -142,7 +144,7 @@ is out of range [i.e., when C<0x110000> and greater]).
 
 =item C<chr_utf8(CODEPOINT)>
 
-=item C<chr_utf8mode(CODEPOINT)>
+=item C<chr_utf8mod(CODEPOINT)>
 
 =item C<chr_utfcp1047(CODEPOINT)>
 
@@ -158,12 +160,6 @@ If C<STRING> is empty or begins at a partial octet, returns C<undef>.
 C<STRING> may begin at a surrogate code point [C<0xD800..0xDFFF>]
 or an out-of-range code point  [C<0x110000> and greater]).
 
-B<Note:> Before Perl 5.8.0, C<CORE::ord()> did not cope with
-surrogate code points, reversed BOM (C<0xFFFE>),
-and a special character C<0xFFFF>;
-C<ord_unicode()> should cope with these code points
-even if older Perl like 5.6.1, 5.7.2 is used.
-
 =over 4
 
 =item C<ord_unicode(CODEPOINT)>
@@ -178,7 +174,7 @@ even if older Perl like 5.6.1, 5.7.2 is used.
 
 =item C<ord_utf8(CODEPOINT)>
 
-=item C<ord_utf8mode(CODEPOINT)>
+=item C<ord_utf8mod(CODEPOINT)>
 
 =item C<ord_utfcp1047(CODEPOINT)>
 
@@ -186,7 +182,7 @@ even if older Perl like 5.6.1, 5.7.2 is used.
 
 =head1 AUTHOR
 
-SADAHIRO Tomoyuki, <SADAHIRO@cpan.org>
+SADAHIRO Tomoyuki <SADAHIRO@cpan.org>
 
   http://homepage1.nifty.com/nomenclator/perl/
 
