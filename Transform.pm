@@ -9,6 +9,8 @@ require Exporter;
 require DynaLoader;
 require AutoLoader;
 
+$VERSION = '0.22';
+
 @ISA = qw(Exporter DynaLoader);
 
 our %EXPORT_TAGS = (
@@ -40,8 +42,6 @@ $EXPORT_TAGS{all}  = [ map @$_, values %EXPORT_TAGS ];
 
 @EXPORT_OK = @{ $EXPORT_TAGS{all} };
 @EXPORT = (map @$_, @EXPORT_TAGS{qw(from to)});
-
-$VERSION = '0.21';
 
 bootstrap Unicode::Transform $VERSION;
 

@@ -1,5 +1,5 @@
 
-BEGIN { $| = 1; print "1..24\n"; }
+BEGIN { $| = 1; print "1..28\n"; }
 END {print "not ok 1\n" unless $loaded;}
 
 use Unicode::Transform;
@@ -124,22 +124,22 @@ print 1
    ? "ok" : "not ok", " 24\n";
 
 # a UTF8-on string as a byte string is to be downgraded...
-#
-#$utf8_fe7f_upgraded = ord("A") != 0x41
-#     ? pack('U*', 213, 190, 215)  # EBCDIC "\xef\xb9\xbf"
-#     : pack('U*', 239, 185, 191); # ASCII  "\xef\xb9\xbf"
-#
-#$utf8_fe7f_bytes = pack('C*', 239, 185, 191);
-#
-#print "\x{fe7f}" eq utf8_to_unicode($utf8_fe7f_upgraded)
-#   ? "ok" : "not ok", " 25\n";
-#
-#print "\x{fe7f}" eq utf8_to_unicode($utf8_fe7f_bytes)
-#   ? "ok" : "not ok", " 26\n";
-#
-#print  $utf8_fe7f_upgraded eq unicode_to_utf8("\x{fe7f}")
-#   ? "ok" : "not ok", " 27\n";
-#
-#print  $utf8_fe7f_bytes    eq unicode_to_utf8("\x{fe7f}")
-#   ? "ok" : "not ok", " 28\n";
+
+$utf8_fe7f_upgraded = (ord("A") != 0x41)
+     ? pack('U*', 213, 190, 215)  # EBCDIC "\xef\xb9\xbf"
+     : pack('U*', 239, 185, 191); # ASCII  "\xef\xb9\xbf"
+
+$utf8_fe7f_bytes = pack('C*', 239, 185, 191);
+
+print "\x{fe7f}" eq utf8_to_unicode($utf8_fe7f_upgraded)
+   ? "ok" : "not ok", " 25\n";
+
+print "\x{fe7f}" eq utf8_to_unicode($utf8_fe7f_bytes)
+   ? "ok" : "not ok", " 26\n";
+
+print  $utf8_fe7f_upgraded eq unicode_to_utf8("\x{fe7f}")
+   ? "ok" : "not ok", " 27\n";
+
+print  $utf8_fe7f_bytes    eq unicode_to_utf8("\x{fe7f}")
+   ? "ok" : "not ok", " 28\n";
 

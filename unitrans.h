@@ -7,18 +7,21 @@ All UTFs are limited in 0..10FFFF for roundtrap.
 
 (i) on ASCII platform
 
-    UTF-8 Bit pattern           1st Byte   2nd Byte  3rd Byte  4th Byte
+    UTF-8 Bit pattern           1st Byte  2nd Byte  3rd Byte  4th Byte
 
                     0xxxxxxx    0xxxxxxx
            00000yyy yyxxxxxx    110yyyyy  10xxxxxx
            zzzzyyyy yyxxxxxx    1110zzzz  10yyyyyy  10xxxxxx
   000wwwzz zzzzyyyy yyxxxxxx    11110www  10zzzzzz  10yyyyyy  10xxxxxx
 
-		      UTF-8   UTF8MOD  UTF-16    UTF-32
-     0000..  007F	1	1	2(2)      4(4)
-     0080..  07FF	2	1/3(2)  2         4
-     0800..  FFFF	3	3/4<2>	2<2>      4
-    10000..1FFFFF	4	4/5	4         4<1>
+		      UTF-8   UTF8MOD       UTF-16    UTF-32
+     0000..  007F	1	1	     2(2)      4(4)
+     0080..  07FF	2	1/3(1.5)<2>  2         4
+     0800..  FFFF	3	3/4	     2<1.5>    4
+    10000..1FFFFF	4	4/5	     4         4<1>
+
+  * (n) determines MaxLenFmUni (max. pre-expansion from UTF-8 to other)
+  * <n> determines MaxLenToUni (max. pre-expansion from other to UTF-8)
 
 (ii) on EBCDIC platform
 
@@ -30,12 +33,15 @@ All UTFs are limited in 0..10FFFF for roundtrap.
       00ww wzzzzzyy yyyxxxxx    11110www 101zzzzz 101yyyyy 101xxxxx
   00vvwwww wzzzzzyy yyyxxxxx    111110vv 101wwwww 101zzzzz 101yyyyy 101xxxxx
 
-		  UTF-EBCDIC   UTF-8   UTF-16    UTF-32
-     0000..  009F	1	1/2(2)	2(2)      4(4)
-     00A0..  03FF	2	2	2         4
-     0400..  3FFF	3	2/3<2>	2         4
-     4000.. 3FFFF	4       3/4	2/4<2>    4
-    40000..3FFFFF	5       4/5	4         4<2>
+		  UTF-EBCDIC   UTF-8      UTF-16    UTF-32
+     0000..  009F	1	1/2(2)	    2(2)      4(4)
+     00A0..  03FF	2	2	    2         4
+     0400..  3FFF	3	2/3<1.5>    2         4
+     4000.. 3FFFF	4       3/4	   2/4<2>     4
+    40000..3FFFFF	5       4/5	    4         4<1.25>
+
+  * (n) determines MaxLenFmUni (max. pre-expansion from UTF-EBCDIC to another)
+  * <n> determines MaxLenToUni (max. pre-expansion from another to UTF-EBCDIC)
 
  ***************************************/
 
