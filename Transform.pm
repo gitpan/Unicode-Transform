@@ -10,7 +10,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 require Exporter;
 require DynaLoader;
 
-$VERSION = '0.31';
+$VERSION = '0.32';
 
 @ISA = qw(Exporter DynaLoader);
 
@@ -45,11 +45,14 @@ Unicode::Transform - conversion among Unicode Transformation Formats (UTFs)
 
 =head1 SYNOPSIS
 
-    use Unicode::Transform;
+    use Unicode::Transform qw(:all);
 
     $unicode_string = utf16be_to_unicode($utf16be_string);
     $utf16le_string = unicode_to_utf16le($unicode_string);
     $utf8_string    = utf32be_to_utf8   ($utf32be_string);
+
+    $utf8_string    = utf32be_to_utf8(\&chr_utf8, $utf32be_string);
+         # illegal code points are allowed.
 
 =head1 DESCRIPTION
 
@@ -59,6 +62,12 @@ among some Unicode Transformation Formats (UTFs).
 =head2 Conversion Between UTF
 
 (Exporting: C<use Unicode::Transform qw(:conv);>)
+
+=over 4
+
+=item C<E<lt>SRC_UTF_NAMEE<gt>_to_E<lt>DST_UTF_NAMEE<gt>([CALLBACK,] STRING)>
+
+=back
 
 B<Function names>
 
@@ -96,7 +105,8 @@ C<STRING> is a source string.
 Currently, only coderefs are allowed as C<CALLBACK>.
 
 If C<CALLBACK> is omitted, illegal code points and partial octets
-are deleted.
+are deleted, as if a code reference constantly returning empty string,
+C<sub {''}>, was used as C<CALLBACK>.
 
 Illegal code points comprise
 surrogate code points [C<0xD800..0xDFFF>] and
@@ -104,7 +114,7 @@ out-of-range code points [C<0x110000> and greater]).
 
 Partial octets are octets which do not represent any code point.
 They include the first octet without following octets in UTF-8 like C<"\xC2">,
-the last octet in UTF-16BE,LE with odd-numbered octets.
+the last octet in UTF-16BE,LE with odd number of octets.
 
 If C<CALLBACK> is specified,
 the appearance of an illegal code point or a partial octet calls
@@ -113,9 +123,11 @@ is the unsigned integer value of its code point;
 if the value is lesser than 256, that is a partial octet.
 
 The return value from C<CALLBACK> is inserted there.
+You may use C<chr_E<lt>DST_UTF_NAMEE<gt>()> as C<CALLBACK> (see below).
+Return value from C<CALLBACK> should be in UTF of C<DST_UTF_NAME>.
 
-(You can call C<die> or C<croak> in C<CALLBACK>
-if you want to trap an ill-formed source.)
+You can call C<die> or C<croak> in C<CALLBACK>
+if you want to trap an ill-formed source.
 
 =head2 Conversion from Code Point to String
 
@@ -123,12 +135,16 @@ if you want to trap an ill-formed source.)
 
 Returns the character represented by that C<CODEPOINT> as the string
 in the Unicode transformation format.
-C<CODEPOINT> can be in the range of C<0..0x7FFF_FFFF>.
-Returns a string even if C<CODEPOINT> is
-a surrogate code point [C<0xD800..0xDFFF>].
+C<CODEPOINT> should be an unsigned integer. Returns a string
+even if C<CODEPOINT> is a surrogate code point [C<0xD800..0xDFFF>].
 
-C<chr_utf16le()> and C<chr_utf16be()> returns C<undef> when C<CODEPOINT>
-is out of range [i.e., when C<0x110000> and greater]).
+The maximum value of C<CODEPOINT> is:
+
+    0x0010_FFFF for chr_utf16le() and chr_utf16be()
+    0x7FFF_FFFF for chr_utf8(), chr_utf8mod(), chr_utfcp1047()
+    0xFFFF_FFFF for chr_utf32le(), chr_utf32be()
+
+Returns C<undef> if C<CODEPOINT> is greater than the maximum value.
 
 =over 4
 
@@ -199,7 +215,7 @@ and/or modify it under the same terms as Perl itself.
 
 =item UTF-EBCDIC (and UTF-8-Mod)
 
-L<http://www.unicode.org/reports/tr16>
+L<http://www.unicode.org/reports/tr16/>
 
 =back
 

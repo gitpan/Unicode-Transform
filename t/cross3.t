@@ -49,12 +49,13 @@ sub emp { "" }
 sub fbk { sprintf "<%02X>", shift };
 
 our ($cv, $chr);
-$chr = 1;
 
 for my $a (@Codenames) {
     for my $b (@Codenames) {
-	eval qq{ \$cv = \\&${a}_to_${b} };
-	eval qq{ \$chr = \\&chr_${b} };
+	eval qq{
+	    \$cv = \\&${a}_to_${b};
+	    \$chr = \\&chr_${b};
+	};
 	$@ and die;
 
 	print $cv->($Src{$a}) eq $Dst{$b}

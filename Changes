@@ -1,5 +1,12 @@
 Revision history for Perl module Unicode::Transform.
 
+0.32  Sun Nov 30 19:57:01 2003
+    - modified doc.
+    - UTF-32BE,LE : chr_utf32(be|le) now cope with code points
+      in range of 0x8000_0000..0xFFFF_FFFF.
+      (ord_utf32(be|le) have been 32-bit safe, then chr_ will be so.)
+    - added u32.t.
+
 0.31  Sat Nov 15 21:22:22 2003
     - doc fix: should be chr_utf8mod() and ord_utf8mod(), but not /mode\z/.
 
@@ -10,9 +17,9 @@ Revision history for Perl module Unicode::Transform.
     - new: ord_<something> and chr_<something> functions (now improved
       and documented)
     - fixed: unicode_to_<something>(), ord_unicode():
-	* \x{D800}-\x{DFFF}\x{FFFE}\x{FFFF} and partial octets are
-	  no longer regarded as NULL (U+0000).
-	* Partial octets are treated as illegal (no longer as NULL).
+      * \x{D800}-\x{DFFF}\x{FFFE}\x{FFFF} and partial octets are
+        no longer regarded as NULL (U+0000).
+      * Partial octets are treated as illegal (no longer as NULL).
 
 0.23  Sun Nov  9 17:25:36 2003
     - fixed: unicode_to_utfcp1047() and utfcp1047_to_unicode() did not

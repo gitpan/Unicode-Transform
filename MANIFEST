@@ -12,4 +12,5 @@ t/cross3.t
 t/handler.t
 t/ord.t
 t/test.t
+t/u32.t
 t/unicode.t

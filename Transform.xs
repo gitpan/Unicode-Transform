@@ -68,7 +68,7 @@ sv_cat_retcvref (SV *dst, SV *cv, SV *sv)
 
 MODULE = Unicode::Transform	PACKAGE = Unicode::Transform
 
-void
+SV*
 unicode_to_unicode (arg1, arg2=0)
     SV* arg1
     SV* arg2
@@ -146,7 +146,7 @@ unicode_to_unicode (arg1, arg2=0)
     U8* (*app_uv)(U8*, UV);
     int from_utf_num, to_utf_num;
     bool from_unicode, to_unicode;
-  PPCODE:
+  CODE:
     cvref = NULL;
     if (SvROK(arg1)) {
 	if (SvTYPE(SvRV(arg1)) == SVt_PVCV)
@@ -178,7 +178,7 @@ unicode_to_unicode (arg1, arg2=0)
 
     dstlen = srclen * MaxLenAmplUni[ix] + 1;
 
-    dst = sv_2mortal(newSV(dstlen));
+    dst = newSV(dstlen);
     (void)SvPOK_only(dst);
     if (to_unicode) {
 	SvUTF8_on(dst);
@@ -223,8 +223,9 @@ unicode_to_unicode (arg1, arg2=0)
 	*d = '\0';
 	SvCUR_set(dst, d - (U8*)SvPVX(dst));
     }
-    XPUSHs(dst);
-
+    RETVAL = dst;
+  OUTPUT:
+    RETVAL
 
 
 SV*
