@@ -1,25 +1,33 @@
-Unicode::Transform version 0.23
+Unicode::Transform version 0.30
 ================
 
 NAME
 
-Unicode::Transform - conversion among some UTF's
+Unicode::Transform - conversion among some Unicode transformation formats
 
 SYNOPSIS
 
-    use Unicode::Transform;
+    use Unicode::Transform qw(:conv);
 
     $unicode_string = utf16be_to_unicode($utf16be_string);
     $utf16le_string = unicode_to_utf16le($unicode_string);
+    $utf8_string    = utf32be_to_utf8   ($utf32be_string);
 
 DESCRIPTION
 
-This module provides the following functions:
+This module supports the following UTF:
 
-    utf16be_to_unicode() converts UTF-16BE to Unicode of Perl.
-    utf16le_to_unicode() converts UTF-16LE to Unicode.
-    unicode_to_utf16be() converts Unicode to UTF-16BE.
-    unicode_to_utf16le() converts Unicode to UTF-16LE.
+    unicode    (for Perl's internal strings; see perlunicode)
+    utf16le    (for UTF-16LE)
+    utf16be    (for UTF-16BE)
+    utf32le    (for UTF-32LE)
+    utf32be    (for UTF-32BE)
+    utf8       (for UTF-8)
+    utf8mod    (for UTF-8-Mod)
+    utfcp1047  (for CP-1047-oriented UTF-EBCDIC).
+
+where hyphen-removed and lowercased names are used as
+a part of a function name (like <something>_to_<something>).
 
 INSTALLATION
 

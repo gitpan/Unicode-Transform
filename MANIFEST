@@ -6,6 +6,10 @@ Transform.pm
 Transform.xs
 unitrans.h
 t/chr.t
+t/cross1.t
+t/cross2.t
+t/cross3.t
 t/handler.t
 t/ord.t
 t/test.t
+t/unicode.t

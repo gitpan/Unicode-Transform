@@ -1,5 +1,5 @@
 
-BEGIN { $| = 1; print "1..28\n"; }
+BEGIN { $| = 1; print "1..30\n"; }
 
 use Unicode::Transform;
 use strict;
@@ -144,3 +144,8 @@ print  $utf8_fe7f_upgraded eq unicode_to_utf8("\x{fe7f}")
 print  $utf8_fe7f_bytes    eq unicode_to_utf8("\x{fe7f}")
    ? "ok" : "not ok", " 28\n";
 
+print "\x41\xC2\xB1\x20" eq unicode_to_utf8('A± ')
+   ? "ok" : "not ok", " 29\n";
+
+print "\0\x41\0\xB1\0\x20" eq unicode_to_utf16be('A± ')
+   ? "ok" : "not ok", " 30\n";

@@ -1,59 +1,125 @@
 #ifndef UNITRANS_H
 #define UNITRANS_H
 
+/* Perl 5.6.1 ? */
+#ifndef uvuni_to_utf8
+#define uvuni_to_utf8   uv_to_utf8
+#endif /* uvuni_to_utf8 */
+
+/* Perl 5.6.1 ? */
+#ifndef utf8n_to_uvuni
+#define utf8n_to_uvuni   utf8_to_uv
+#endif /* utf8n_to_uvuni */
+
+/* Perl 5.6.1 ? */
+#ifndef UTF8_IS_INVARIANT
+#define UTF8_IS_INVARIANT   UTF8_IS_ASCII
+#endif /* UTF8_IS_INVARIANT */
+
+/* UTF8_ALLOW_BOM is used before Perl 5.8.0 */
+#ifdef UTF8_ALLOW_BOM
+#define AllowAnyUTF (UTF8_ALLOW_SURROGATE|UTF8_ALLOW_BOM|UTF8_ALLOW_FFFF)
+#else 
+#define AllowAnyUTF (UTF8_ALLOW_SURROGATE|UTF8_ALLOW_FFFF)
+#endif
+
+UV
+ord_in_unicode(U8 *s, STRLEN curlen, STRLEN *retlen)
+{
+
+    UV uv; STRLEN ret;
+    uv = utf8n_to_uvuni(s, curlen, &ret, AllowAnyUTF|UTF8_CHECK_ONLY);
+
+    if (retlen) {
+    /* in old Perl (<= 5.7.2), falsely UTF8_ALLOW_LONG == UTF8_CHECK_ONLY */
+	if (ret == (STRLEN)-1 || ret > (STRLEN) UNISKIP(uv))
+	    *retlen = 0;
+	else
+	    *retlen = ret;
+    }
+    return uv;
+}
+
+U8*
+app_in_unicode(U8* s, UV uv)
+{
+    return uvuni_to_utf8(s, uv);
+}
+
+
 /***************************************
 
-All UTFs are limited in 0..10FFFF for roundtrap.
+All UTFs are limited in 0..D7FF and E000..10FFFF for roundtrap.
 
 (i) on ASCII platform
 
-    UTF-8 Bit pattern           1st Byte  2nd Byte  3rd Byte  4th Byte
+          UTF-8 Bit pattern            1st Byte  2nd Byte  3rd Byte  4th Byte
 
-                    0xxxxxxx    0xxxxxxx
-           00000yyy yyxxxxxx    110yyyyy  10xxxxxx
-           zzzzyyyy yyxxxxxx    1110zzzz  10yyyyyy  10xxxxxx
-  000wwwzz zzzzyyyy yyxxxxxx    11110www  10zzzzzz  10yyyyyy  10xxxxxx
+                           0xxxxxxx    0xxxxxxx
+                  00000yyy yyxxxxxx    110yyyyy  10xxxxxx
+                  zzzzyyyy yyxxxxxx    1110zzzz  10yyyyyy  10xxxxxx
+         000wwwzz zzzzyyyy yyxxxxxx    11110www  10zzzzzz  10yyyyyy  10xxxxxx
 
-		      UTF-8   UTF8MOD       UTF-16    UTF-32
-     0000..  007F	1	1	     2(2)      4(4)
-     0080..  07FF	2	1/3(1.5)<2>  2         4
-     0800..  FFFF	3	3/4	     2<1.5>    4
-    10000..1FFFFF	4	4/5	     4         4<1>
-
-  * (n) determines MaxLenFmUni (max. pre-expansion from UTF-8 to other)
-  * <n> determines MaxLenToUni (max. pre-expansion from other to UTF-8)
+        UCS              UTF-8
+   00000000-0000007F       1
+   00000080-000007FF       2
+   00000800-0000FFFF       3
+   00010000-001FFFFF       4
+   00200000-03FFFFFF       5
+   04000000-7FFFFFFF       6
 
 (ii) on EBCDIC platform
 
-    UTF-8-Mod Bit pattern       1st Byte 2nd Byte 3rd Byte 4th Byte 5th Byte
-           00000000 0xxxxxxx    0xxxxxxx
-           00000000 100xxxxx    100xxxxx
-           000000yy yyyxxxxx    110yyyyy 101xxxxx
-           00zzzzyy yyyxxxxx    1110zzzz 101yyyyy 101xxxxx
-      00ww wzzzzzyy yyyxxxxx    11110www 101zzzzz 101yyyyy 101xxxxx
-  00vvwwww wzzzzzyy yyyxxxxx    111110vv 101wwwww 101zzzzz 101yyyyy 101xxxxx
+   UTF-8-Mod Bit pattern      1st Byte  2nd Byte  3rd Byte  4th Byte  5th Byte
+          00000000 0xxxxxxx   0xxxxxxx
+          00000000 100xxxxx   100xxxxx
+          000000yy yyyxxxxx   110yyyyy  101xxxxx
+          00zzzzyy yyyxxxxx   1110zzzz  101yyyyy  101xxxxx
+ 000000ww wzzzzzyy yyyxxxxx   11110www  101zzzzz  101yyyyy  101xxxxx
+ 00vvwwww wzzzzzyy yyyxxxxx   111110vv  101wwwww  101zzzzz  101yyyyy  101xxxxx
 
-		  UTF-EBCDIC   UTF-8      UTF-16    UTF-32
-     0000..  009F	1	1/2(2)	    2(2)      4(4)
-     00A0..  03FF	2	2	    2         4
-     0400..  3FFF	3	2/3<1.5>    2         4
-     4000.. 3FFFF	4       3/4	   2/4<2>     4
-    40000..3FFFFF	5       4/5	    4         4<1.25>
+        UCS            UTF-EBCDIC
+   00000000-0000009F       1
+   000000A0-000003FF       2
+   00000400-00003FFF       3
+   00004000-0003FFFF       4
+   00040000-003FFFFF       5
+   00400000-03FFFFFF       6
+   04000000-7FFFFFFF       7
 
-  * (n) determines MaxLenFmUni (max. pre-expansion from UTF-EBCDIC to another)
-  * <n> determines MaxLenToUni (max. pre-expansion from another to UTF-EBCDIC)
+(iii) length distribution
+
+                      UTF-8  UTF8MOD  UTF-16  UTF-32
+     0000..    007F     1       1       2       4
+     0080..    009F     2       1       2       4
+     00A0..    03FF     2       2       2       4
+     0400..    07FF     2       3       2       4
+     0800..    3FFF     3       3       2       4
+     4000..    FFFF     3       4       2       4
+    10000..   3FFFF     4       4       4       4
+    40000..  10FFFF     4       5       4       4
+   110000..  1FFFFF     4       5      N/A      4
+   200000..  3FFFFF     5       5      N/A      4
+   400000.. 3FFFFFF     5       6      N/A      4
+  4000000..7FFFFFFF     6       7      N/A      4
+
+  * UTF-8  to UTF-8M : Max 1.5    * UTF-16 to UTF-8  : Max 1.5
+  * UTF-8  to UTF-16 : Max 2      * UTF-16 to UTF-8M : Max 2
+  * UTF-8  to UTF-32 : Max 4      * UTF-16 to UTF-32 : Max 2
+  * UTF-8M to UTF-8  : Max 2      * UTF-32 to UTF-8  : Max 1 (or 1.5)
+  * UTF-8M to UTF-16 : Max 2      * UTF-32 to UTF-8M : Max 1.25 (or 1.75)
+  * UTF-8M to UTF-32 : Max 4      * UTF-32 to UTF-16 : Max 1
 
  ***************************************/
 
-/*for the conv from unicode to UTF-32, dstlen should be duplicated in XSUB */
-#define MaxLenUni	(2)
-
-#define VALID_UTF_MAX		(0x10FFFF)
-#define Is_VALID_UTF(uv)	((uv) <= VALID_UTF_MAX)
+#define UV_Max_UTF16		(0x10FFFF)
+#define UV_Max_UTF		(0x7FFFFFFF)
 
 #define UTF16_IS_SURROG(uv)	(0xD800 <= (uv) && (uv) <= 0xDFFF)
 #define UTF16_HI_SURROG(uv)	(0xD800 <= (uv) && (uv) <= 0xDBFF)
 #define UTF16_LO_SURROG(uv)	(0xDC00 <= (uv) && (uv) <= 0xDFFF)
+
+#define Is_VALID_UTF(uv)	((uv) <= UV_Max_UTF16 && !UTF16_IS_SURROG(uv))
 
 #define UTF8A_SKIP(uv)	\
 	( (uv) < 0x80           ? 1 : \
@@ -81,7 +147,11 @@ All UTFs are limited in 0..10FFFF for roundtrap.
 	  (b) < 0xE0 ? 2 :	\
 	  (b) < 0xF0 ? 3 :	\
 	  (b) < 0xF8 ? 4 :	\
-	  (b) < 0xFC ? 5 : 0)
+	  (b) < 0xFC ? 5 :	\
+	  (b) < 0xFE ? 6 :	\
+	  (b) <= 0xFF ? 7 : 0)
+
+#define UTF8M_MaxLEN	(8)
 
 UV
 ord_in_utf16le(U8 *s, STRLEN curlen, STRLEN *retlen)
@@ -189,7 +259,9 @@ ord_in_utf8(U8 *s, STRLEN curlen, STRLEN *retlen)
 	  *s < 0xC0 ? 0 :
 	  *s < 0xE0 ? 2 :
 	  *s < 0xF0 ? 3 :
-	  *s < 0xF8 ? 4 : 0;
+	  *s < 0xF8 ? 4 : 
+	  *s < 0xFC ? 5 : 
+	  *s < 0xFE ? 6 : 0;
 
     if (curlen < len || len == 0) {
 	if (retlen)
@@ -210,6 +282,16 @@ ord_in_utf8(U8 *s, STRLEN curlen, STRLEN *retlen)
     else if (*s < 0xF8) {
 	uv = (UV)(((s[0] & 0x07) << 18) | ((s[1] & 0x3f) << 12) |
 		  ((s[2] & 0x3f) <<  6) |  (s[3] & 0x3f));
+    }
+    else if (*s < 0xFC) {
+	uv = (UV)(((s[0] & 0x03) << 24) | ((s[1] & 0x3f) << 18) |
+		  ((s[2] & 0x3f) << 12) | ((s[3] & 0x3f) <<  6) |
+		   (s[4] & 0x3f));
+    }
+    else if (*s < 0xFE) {
+	uv = (UV)(((s[0] & 0x01) << 30) | ((s[1] & 0x3f) << 24) |
+		  ((s[2] & 0x3f) << 18) | ((s[3] & 0x3f) << 12) |
+		  ((s[4] & 0x3f) <<  6) |  (s[5] & 0x3f));
     }
 
     for (i = 1; i < len; i++) {
@@ -267,6 +349,17 @@ ord_in_utf8mod(U8 *s, STRLEN curlen, STRLEN *retlen)
 		  ((s[2] & 0x1f) << 10) | ((s[3] & 0x1f) <<  5) |
 		   (s[4] & 0x1f));
     }
+    else if (*s < 0xFE) {
+	uv = (UV)(((s[0] & 0x01) << 25) | ((s[1] & 0x1f) << 20) |
+		  ((s[2] & 0x1f) << 15) | ((s[3] & 0x1f) << 10) |
+		  ((s[4] & 0x1f) <<  5) |  (s[5] & 0x1f));
+    }
+    else if (*s <= 0xFF) {
+	uv = (UV)(((s[0] & 0x01) << 30) | ((s[1] & 0x1f) << 25) |
+		  ((s[2] & 0x1f) << 20) | ((s[3] & 0x1f) << 15) |
+		  ((s[4] & 0x1f) << 10) | ((s[5] & 0x1f) <<  5) |
+		   (s[6] & 0x1f));
+    }
 
     for (i = 1; i < len; i++)
 	if (!UTF8M_TRAIL(s[i])) {
@@ -290,7 +383,7 @@ app_in_utf16le(U8* s, UV uv)
 	*s++ = (U8)(uv & 0xff);
 	*s++ = (U8)(uv >> 8);
     }
-    else if (Is_VALID_UTF(uv)) {
+    else if (uv <= UV_Max_UTF16) {
 	int hi, lo;
 	uv -= 0x10000;
 	hi = (0xD800 | (uv >> 10));
@@ -311,7 +404,7 @@ app_in_utf16be(U8* s, UV uv)
 	*s++ = (U8)(uv >> 8);
 	*s++ = (U8)(uv & 0xff);
     }
-    else if (Is_VALID_UTF(uv)) {
+    else if (uv <= UV_Max_UTF16) {
 	int hi, lo;
 	uv -= 0x10000;
 	hi = (0xD800 | (uv >> 10));
@@ -328,7 +421,7 @@ app_in_utf16be(U8* s, UV uv)
 U8*
 app_in_utf32le(U8* s, UV uv)
 {
-    if (Is_VALID_UTF(uv)) {
+    if (uv <= UV_Max_UTF) {
 	*s++ = (U8)((uv      ) & 0xff);
 	*s++ = (U8)((uv >>  8) & 0xff);
 	*s++ = (U8)((uv >> 16) & 0xff);
@@ -341,7 +434,7 @@ app_in_utf32le(U8* s, UV uv)
 U8*
 app_in_utf32be(U8* s, UV uv)
 {
-    if (Is_VALID_UTF(uv)) {
+    if (uv <= UV_Max_UTF) {
 	*s++ = (U8)((uv >> 24) & 0xff);
 	*s++ = (U8)((uv >> 16) & 0xff);
 	*s++ = (U8)((uv >>  8) & 0xff);
@@ -366,8 +459,23 @@ app_in_utf8(U8* s, UV uv)
 	*s++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
 	*s++ = (U8)(( uv        & 0x3f) | 0x80);
     }
-    else if (Is_VALID_UTF(uv)) {
+    else if (uv < 0x200000) {
 	*s++ = (U8)(( uv >> 18)         | 0xf0);
+	*s++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
+	*s++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
+	*s++ = (U8)(( uv        & 0x3f) | 0x80);
+    }
+    else if (uv < 0x4000000) {
+	*s++ = (U8)(( uv >> 24)         | 0xf8);
+	*s++ = (U8)(((uv >> 18) & 0x3f) | 0x80);
+	*s++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
+	*s++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
+	*s++ = (U8)(( uv        & 0x3f) | 0x80);
+    }
+    else if (uv < 0x80000000) {
+	*s++ = (U8)(( uv >> 30)         | 0xfc);
+	*s++ = (U8)(((uv >> 24) & 0x3f) | 0x80);
+	*s++ = (U8)(((uv >> 18) & 0x3f) | 0x80);
 	*s++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
 	*s++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
 	*s++ = (U8)(( uv        & 0x3f) | 0x80);
@@ -397,8 +505,25 @@ app_in_utf8mod(U8* s, UV uv)
 	*s++ = (U8)(((uv >>  5) & 0x1f) | 0xa0);
 	*s++ = (U8)(( uv        & 0x1f) | 0xa0);
     }
-    else if (Is_VALID_UTF(uv)) {
+    else if (uv < 0x400000) {
 	*s++ = (U8)(( uv >> 20)         | 0xf8);
+	*s++ = (U8)(((uv >> 15) & 0x1f) | 0xa0);
+	*s++ = (U8)(((uv >> 10) & 0x1f) | 0xa0);
+	*s++ = (U8)(((uv >>  5) & 0x1f) | 0xa0);
+	*s++ = (U8)(( uv        & 0x1f) | 0xa0);
+    }
+    else if (uv < 0x4000000) {
+	*s++ = (U8)(( uv >> 25)         | 0xfc);
+	*s++ = (U8)(((uv >> 20) & 0x1f) | 0xa0);
+	*s++ = (U8)(((uv >> 15) & 0x1f) | 0xa0);
+	*s++ = (U8)(((uv >> 10) & 0x1f) | 0xa0);
+	*s++ = (U8)(((uv >>  5) & 0x1f) | 0xa0);
+	*s++ = (U8)(( uv        & 0x1f) | 0xa0);
+    }
+    else if (uv < 0x80000000) {
+	*s++ = (U8)(( uv >> 30)         | 0xfe);
+	*s++ = (U8)(((uv >> 25) & 0x1f) | 0xa0);
+	*s++ = (U8)(((uv >> 20) & 0x1f) | 0xa0);
 	*s++ = (U8)(((uv >> 15) & 0x1f) | 0xa0);
 	*s++ = (U8)(((uv >> 10) & 0x1f) | 0xa0);
 	*s++ = (U8)(((uv >>  5) & 0x1f) | 0xa0);
@@ -490,7 +615,7 @@ UV
 ord_in_utfcp1047(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
     UV uv = 0;
-    U8 ini, *p, *d, buff[5];
+    U8 ini, *p, *d, buff[UTF8M_MaxLEN];
     STRLEN len;
 
     if (curlen == 0) {

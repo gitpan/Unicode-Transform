@@ -1,5 +1,16 @@
 Revision history for Perl module Unicode::Transform.
 
+0.30  Sat Nov 15 15:47:29 2003
+    - new: 8 x 8 conversion functions, <something>_to_<something>.
+      (added 50 functions; 14 functions, named unicode_to_<something>
+       and <something>_to_unicode, have been already supported.)
+    - new: ord_<something> and chr_<something> functions (now improved
+      and documented)
+    - fixed: unicode_to_<something>(), ord_unicode():
+	* \x{D800}-\x{DFFF}\x{FFFE}\x{FFFF} and partial octets are
+	  no longer regarded as NULL (U+0000).
+	* Partial octets are treated as illegal (no longer as NULL).
+
 0.23  Sun Nov  9 17:25:36 2003
     - fixed: unicode_to_utfcp1047() and utfcp1047_to_unicode() did not
       cope with CODEREF correctly.
