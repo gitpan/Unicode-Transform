@@ -5,5 +5,7 @@ MANIFEST
 Transform.pm
 Transform.xs
 unitrans.h
+t/chr.t
 t/handler.t
+t/ord.t
 t/test.t

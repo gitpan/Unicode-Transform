@@ -1,9 +1,10 @@
 
 BEGIN { $| = 1; print "1..28\n"; }
-END {print "not ok 1\n" unless $loaded;}
 
 use Unicode::Transform;
-$loaded = 1;
+use strict;
+use warnings;
+
 print "ok 1\n";
 
 #####
@@ -36,14 +37,14 @@ print 1
    && "ABC"  eq utf16le_to_unicode(sub {""}, "\x41\0\x42\0\x43\0")
   ? "ok" : "not ok", " 5\n";
 
-my $unicode = "\x{10000}a\x{12345}z\x{10ffff}\x{4E00}";
+our $unicode = "\x{10000}a\x{12345}z\x{10fffc}\x{4E00}";
 
-my $utf16be = pack 'n*',
-    0xd800, 0xdc00, 0x61, 0xD808, 0xDF45, 0x7a, 0xdbff, 0xdfff, 0x4E00;
-my $utf16le = pack 'v*',
-    0xd800, 0xdc00, 0x61, 0xD808, 0xDF45, 0x7a, 0xdbff, 0xdfff, 0x4E00;
-my $utf32be = pack 'N*', 0x10000, 0x61, 0x12345, 0x7a, 0x10ffff, 0x4E00;
-my $utf32le = pack 'V*', 0x10000, 0x61, 0x12345, 0x7a, 0x10ffff, 0x4E00;
+our $utf16be = pack 'n*',
+    0xd800, 0xdc00, 0x61, 0xD808, 0xDF45, 0x7a, 0xdbff, 0xdffc, 0x4E00;
+our $utf16le = pack 'v*',
+    0xd800, 0xdc00, 0x61, 0xD808, 0xDF45, 0x7a, 0xdbff, 0xdffc, 0x4E00;
+our $utf32be = pack 'N*', 0x10000, 0x61, 0x12345, 0x7a, 0x10fffc, 0x4E00;
+our $utf32le = pack 'V*', 0x10000, 0x61, 0x12345, 0x7a, 0x10fffc, 0x4E00;
 
 print $unicode eq utf16be_to_unicode($utf16be)
    ? "ok" : "not ok", " 6\n";
@@ -69,8 +70,8 @@ print $utf32be eq unicode_to_utf32be($unicode)
 print $utf32le eq unicode_to_utf32le($unicode)
    ? "ok" : "not ok", " 13\n";
 
-my $u8_long = "\x00" x 5000;
-my $u32long = "\x00" x 20000;
+our $u8_long = "\x00" x 5000;
+our $u32long = "\x00" x 20000;
 
 print $u32long eq unicode_to_utf32be($u8_long)
    ? "ok" : "not ok", " 14\n";
@@ -125,11 +126,11 @@ print 1
 
 # a UTF8-on string as a byte string is to be downgraded...
 
-$utf8_fe7f_upgraded = (ord("A") != 0x41)
+our $utf8_fe7f_upgraded = (ord("A") != 0x41)
      ? pack('U*', 213, 190, 215)  # EBCDIC "\xef\xb9\xbf"
      : pack('U*', 239, 185, 191); # ASCII  "\xef\xb9\xbf"
 
-$utf8_fe7f_bytes = pack('C*', 239, 185, 191);
+our $utf8_fe7f_bytes = pack('C*', 239, 185, 191);
 
 print "\x{fe7f}" eq utf8_to_unicode($utf8_fe7f_upgraded)
    ? "ok" : "not ok", " 25\n";

@@ -9,7 +9,7 @@ require Exporter;
 require DynaLoader;
 require AutoLoader;
 
-$VERSION = '0.22';
+$VERSION = '0.23';
 
 @ISA = qw(Exporter DynaLoader);
 
@@ -19,23 +19,22 @@ our %EXPORT_TAGS = (
 	   unicode_to_utf32be	unicode_to_utf8		unicode_to_utf8mod
 	   unicode_to_utfcp1047
 	/ ],
+
     'to' => [
 	qw/utf16le_to_unicode	utf16be_to_unicode	utf32le_to_unicode
 	   utf32be_to_unicode	utf8_to_unicode		utf8mod_to_unicode
 	   utfcp1047_to_unicode
 	/ ],
 
-# not tested.
     'chr' => [
 	qw/chr_utf16le	chr_utf16be	chr_utf32le	chr_utf32be
 	   chr_utf8	chr_utf8mod	chr_utfcp1047
 	/ ],
 
-# not implemented.
-#    'ord' => [
-#	qw/ord_utf16le	ord_utf16be	ord_utf32le	ord_utf32be
-#	   ord_utf8	ord_utf8mod	ord_utfcp1047
-#	/ ],
+    'ord' => [
+	qw/ord_utf16le	ord_utf16be	ord_utf32le	ord_utf32be
+	   ord_utf8	ord_utf8mod	ord_utfcp1047
+	/ ],
 );
 
 $EXPORT_TAGS{all}  = [ map @$_, values %EXPORT_TAGS ];
@@ -158,7 +157,7 @@ Converts UTF-EBCDIC (for CP1047) to Unicode.
 
 =head1 AUTHOR
 
-SADAHIRO Tomoyuki, E<lt>SADAHIRO@cpan.orgE<gt>
+SADAHIRO Tomoyuki, <SADAHIRO@cpan.org>
 
   http://homepage1.nifty.com/nomenclator/perl/
 
@@ -173,9 +172,9 @@ and/or modify it under the same terms as Perl itself.
 
 =item F<perlunicode>
 
-=item L<http://www.unicode.org/reports/tr16>
+=item UTF-EBCDIC (and UTF-8-Mod)
 
-UTF-EBCDIC and UTF-8-Mod
+L<http://www.unicode.org/reports/tr16>
 
 =back
 

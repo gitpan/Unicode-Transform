@@ -1,5 +1,14 @@
 Revision history for Perl module Unicode::Transform.
 
+0.23  Sun Nov  9 17:25:36 2003
+    - fixed: unicode_to_utfcp1047() and utfcp1047_to_unicode() did not
+      cope with CODEREF correctly.
+    - fixed: chr_utfcp1047() was buggy.
+    - added ord_*() functions.
+    - added chr.t and ord.t.
+    - added G_EVAL in XSUB code.
+    - modified test.t avoiding a non-character \x{10ffff}.
+
 0.22  Fri Mar 21 21:46:28 2003
     - fix test.t: new tests 25..28
  http://www.xray.mpe.mpg.de/mailing-lists/perl-unicode/2003-03/msg00026.html

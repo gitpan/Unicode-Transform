@@ -1,4 +1,4 @@
-Unicode::Transform version 0.21
+Unicode::Transform version 0.23
 ================
 
 NAME
@@ -37,7 +37,7 @@ DEPENDENCIES
 
 COPYRIGHT AND LICENCE
 
-    SADAHIRO Tomoyuki, E<lt>SADAHIRO@cpan.orgE<gt>
+    SADAHIRO Tomoyuki, <SADAHIRO@cpan.org>
 
         http://homepage1.nifty.com/nomenclator/perl/
 

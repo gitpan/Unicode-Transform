@@ -46,12 +46,10 @@ All UTFs are limited in 0..10FFFF for roundtrap.
  ***************************************/
 
 /*for the conv from unicode to UTF-32, dstlen should be duplicated in XSUB */
-#define MaxLenFmUni	(2)
-#define MaxLenToUni	(2)
+#define MaxLenUni	(2)
 
 #define VALID_UTF_MAX		(0x10FFFF)
-#define VALID_UTF(uv)		((uv) <= VALID_UTF_MAX)
-#define INVALID_UTF(uv)		((uv) >  VALID_UTF_MAX)
+#define Is_VALID_UTF(uv)	((uv) <= VALID_UTF_MAX)
 
 #define UTF16_IS_SURROG(uv)	(0xD800 <= (uv) && (uv) <= 0xDFFF)
 #define UTF16_HI_SURROG(uv)	(0xD800 <= (uv) && (uv) <= 0xDBFF)
@@ -76,6 +74,14 @@ All UTFs are limited in 0..10FFFF for roundtrap.
 	  (uv) < 0x4000000      ? 6 : 7 )
 
 #define UTF8M_TRAIL(c)	(((c) & 0xE0) == 0xA0)
+
+#define UTF8M_LEN(b)	\
+	( (b) < 0xA0 ? 1 :	\
+	  (b) < 0xC0 ? 0 :	\
+	  (b) < 0xE0 ? 2 :	\
+	  (b) < 0xF0 ? 3 :	\
+	  (b) < 0xF8 ? 4 :	\
+	  (b) < 0xFC ? 5 : 0)
 
 UV
 ord_in_utf16le(U8 *s, STRLEN curlen, STRLEN *retlen)
@@ -171,43 +177,53 @@ UV
 ord_in_utf8(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
     UV uv = 0;
-    int len, i;
+    STRLEN len, i;
+
+    if (curlen == 0) {
+	if (retlen)
+	    *retlen = 0;
+	return 0;
+    }
+
+    len = *s < 0x80 ? 1 :
+	  *s < 0xC0 ? 0 :
+	  *s < 0xE0 ? 2 :
+	  *s < 0xF0 ? 3 :
+	  *s < 0xF8 ? 4 : 0;
+
+    if (curlen < len || len == 0) {
+	if (retlen)
+	    *retlen = 0;
+	return 0;
+    }
 
     if (*s < 0x80) {
 	uv = (UV)*s;
-	len = 1;
-    }
-    else if (*s < 0xC0) {
-	len = 0;
     }
     else if (*s < 0xE0) {
 	uv = (UV)(((s[0] & 0x1f) << 6) | (s[1] & 0x3f));
-	len = 2;
     }
     else if (*s < 0xF0) {
 	uv = (UV)(((s[0] & 0x0f) << 12) |
 		  ((s[1] & 0x3f) <<  6) | (s[2] & 0x3f));
-	len = 3;
     }
     else if (*s < 0xF8) {
 	uv = (UV)(((s[0] & 0x07) << 18) | ((s[1] & 0x3f) << 12) |
 		  ((s[2] & 0x3f) <<  6) |  (s[3] & 0x3f));
-	len = 4;
     }
-    else
-	len = 0;
 
-    for (i = 1; i < len; i++)
+    for (i = 1; i < len; i++) {
 	if (!UTF8A_TRAIL(s[i])) {
 	    len = 0;
 	    break;
 	}
+    }
 
-    if (len != UTF8A_SKIP(uv))
+    if (len != (STRLEN) UTF8A_SKIP(uv))
 	len = 0;
 
     if (retlen)
-	*retlen = (STRLEN)len;
+	*retlen = len;
     return uv;
 }
 
@@ -216,37 +232,41 @@ UV
 ord_in_utf8mod(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
     UV uv = 0;
-    int len, i;
+    STRLEN len, i;
+
+    if (curlen == 0) {
+	if (retlen)
+	    *retlen = 0;
+	return 0;
+    }
+
+    len = UTF8M_LEN(*s);
+
+    if (curlen < len || len == 0) {
+	if (retlen)
+	    *retlen = 0;
+	return 0;
+    }
 
     if (*s < 0xA0) {
 	uv = (UV)*s;
-	len = 1;
-    }
-    else if (*s < 0xC0) {
-	len = 0;
     }
     else if (*s < 0xE0) {
 	uv = (UV)(((s[0] & 0x1f) << 5) | (s[1] & 0x1f));
-	len = 2;
     }
     else if (*s < 0xF0) {
 	uv = (UV)(((s[0] & 0x0f) << 10) |
 		  ((s[1] & 0x1f) <<  5) | (s[2] & 0x1f));
-	len = 3;
     }
     else if (*s < 0xF8) {
 	uv = (UV)(((s[0] & 0x07) << 15) | ((s[1] & 0x1f) << 10) |
 		  ((s[2] & 0x1f) <<  5) |  (s[3] & 0x1f));
-	len = 4;
     }
     else if (*s < 0xFC) {
 	uv = (UV)(((s[0] & 0x03) << 20) | ((s[1] & 0x1f) << 15) |
 		  ((s[2] & 0x1f) << 10) | ((s[3] & 0x1f) <<  5) |
 		   (s[4] & 0x1f));
-	len = 5;
     }
-    else
-	len = 0;
 
     for (i = 1; i < len; i++)
 	if (!UTF8M_TRAIL(s[i])) {
@@ -254,24 +274,23 @@ ord_in_utf8mod(U8 *s, STRLEN curlen, STRLEN *retlen)
 	    break;
 	}
 
-    if (len != UTF8M_SKIP(uv))
+    if (len != (STRLEN) UTF8M_SKIP(uv))
 	len = 0;
 
     if (retlen)
-	*retlen = (STRLEN)len;
+	*retlen = len;
     return uv;
 }
 
 
-STRLEN
+U8*
 app_in_utf16le(U8* s, UV uv)
 {
     if (uv <= 0xFFFF) {
 	*s++ = (U8)(uv & 0xff);
 	*s++ = (U8)(uv >> 8);
-	return 2;
     }
-    else if (VALID_UTF(uv)) {
+    else if (Is_VALID_UTF(uv)) {
 	int hi, lo;
 	uv -= 0x10000;
 	hi = (0xD800 | (uv >> 10));
@@ -280,22 +299,19 @@ app_in_utf16le(U8* s, UV uv)
 	*s++ = (U8)(hi >> 8);
 	*s++ = (U8)(lo & 0xff);
 	*s++ = (U8)(lo >> 8);
-	return 4;
     }
-    else
-	return 0;
+    return s;
 }
 
 
-STRLEN
+U8*
 app_in_utf16be(U8* s, UV uv)
 {
     if (uv <= 0xFFFF) {
 	*s++ = (U8)(uv >> 8);
 	*s++ = (U8)(uv & 0xff);
-	return 2;
     }
-    else if (VALID_UTF(uv)) {
+    else if (Is_VALID_UTF(uv)) {
 	int hi, lo;
 	uv -= 0x10000;
 	hi = (0xD800 | (uv >> 10));
@@ -304,110 +320,95 @@ app_in_utf16be(U8* s, UV uv)
 	*s++ = (U8)(hi & 0xff);
 	*s++ = (U8)(lo >> 8);
 	*s++ = (U8)(lo & 0xff);
-	return 4;
     }
-    else
-	return 0;
+    return s;
 }
 
 
-STRLEN
+U8*
 app_in_utf32le(U8* s, UV uv)
 {
-    if (VALID_UTF(uv)) {
+    if (Is_VALID_UTF(uv)) {
 	*s++ = (U8)((uv      ) & 0xff);
 	*s++ = (U8)((uv >>  8) & 0xff);
 	*s++ = (U8)((uv >> 16) & 0xff);
 	*s++ = (U8)((uv >> 24) & 0xff);
-	return 4;
     }
-    else
-	return 0;
+    return s;
 }
 
 
-STRLEN
+U8*
 app_in_utf32be(U8* s, UV uv)
 {
-    if (VALID_UTF(uv)) {
+    if (Is_VALID_UTF(uv)) {
 	*s++ = (U8)((uv >> 24) & 0xff);
 	*s++ = (U8)((uv >> 16) & 0xff);
 	*s++ = (U8)((uv >>  8) & 0xff);
 	*s++ = (U8)((uv      ) & 0xff);
-	return 4;
     }
-    else
-	return 0;
+    return s;
 }
 
 
-STRLEN
+U8*
 app_in_utf8(U8* s, UV uv)
 {
     if (uv < 0x80) {
 	*s++ = (U8)(uv & 0xff);
-	return 1;
     }
-    if (uv < 0x800) {
+    else if (uv < 0x800) {
 	*s++ = (U8)(( uv >>  6)         | 0xc0);
 	*s++ = (U8)(( uv        & 0x3f) | 0x80);
-	return 2;
     }
-    if (uv < 0x10000) {
+    else if (uv < 0x10000) {
 	*s++ = (U8)(( uv >> 12)         | 0xe0);
 	*s++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
 	*s++ = (U8)(( uv        & 0x3f) | 0x80);
-	return 3;
     }
-    if (uv < 0x200000) {
+    else if (Is_VALID_UTF(uv)) {
 	*s++ = (U8)(( uv >> 18)         | 0xf0);
 	*s++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
 	*s++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
 	*s++ = (U8)(( uv        & 0x3f) | 0x80);
-	return 4;
     }
-    return 0;
+    return s;
 }
 
 
-STRLEN
+U8*
 app_in_utf8mod(U8* s, UV uv)
 {
     if (uv < 0xa0) {
 	*s++ = (U8)(uv & 0xff);
-	return 1;
     }
-    if (uv < 0x400) {
+    else if (uv < 0x400) {
 	*s++ = (U8)(( uv >>  5)         | 0xc0);
 	*s++ = (U8)(( uv        & 0x1f) | 0xa0);
-	return 2;
     }
-    if (uv < 0x4000) {
+    else if (uv < 0x4000) {
 	*s++ = (U8)(( uv >> 10)         | 0xe0);
 	*s++ = (U8)(((uv >>  5) & 0x1f) | 0xa0);
 	*s++ = (U8)(( uv        & 0x1f) | 0xa0);
-	return 3;
     }
-    if (uv < 0x40000) {
+    else if (uv < 0x40000) {
 	*s++ = (U8)(( uv >> 15)         | 0xf0);
 	*s++ = (U8)(((uv >> 10) & 0x1f) | 0xa0);
 	*s++ = (U8)(((uv >>  5) & 0x1f) | 0xa0);
 	*s++ = (U8)(( uv        & 0x1f) | 0xa0);
-	return 4;
     }
-    if (uv < 0x400000) {
+    else if (Is_VALID_UTF(uv)) {
 	*s++ = (U8)(( uv >> 20)         | 0xf8);
 	*s++ = (U8)(((uv >> 15) & 0x1f) | 0xa0);
 	*s++ = (U8)(((uv >> 10) & 0x1f) | 0xa0);
 	*s++ = (U8)(((uv >>  5) & 0x1f) | 0xa0);
 	*s++ = (U8)(( uv        & 0x1f) | 0xa0);
-	return 5;
     }
-    return 0;
+    return s;
 }
 
 
-unsigned char utf_to_i8_cp1047[] = {
+static unsigned char utf_to_i8_cp1047[] = {
   0x00, 0x01, 0x02, 0x03, 0x37, 0x2D, 0x2E, 0x2F,
   0x16, 0x05, 0x15, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
   0x10, 0x11, 0x12, 0x13, 0x3C, 0x3D, 0x32, 0x26,
@@ -445,7 +446,7 @@ unsigned char utf_to_i8_cp1047[] = {
   0xED, 0xEE, 0xEF, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE,
 };
 
-unsigned char i8_to_utf_cp1047[] = {
+static unsigned char i8_to_utf_cp1047[] = {
   0x00, 0x01, 0x02, 0x03, 0x9C, 0x09, 0x86, 0x7F,
   0x97, 0x8D, 0x8E, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
   0x10, 0x11, 0x12, 0x13, 0x9D, 0x0A, 0x08, 0x87,
@@ -482,5 +483,50 @@ unsigned char i8_to_utf_cp1047[] = {
   0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
   0x38, 0x39, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x9F,
 };
+
+
+
+UV
+ord_in_utfcp1047(U8 *s, STRLEN curlen, STRLEN *retlen)
+{
+    UV uv = 0;
+    U8 ini, *p, *d, buff[5];
+    STRLEN len;
+
+    if (curlen == 0) {
+	if (retlen)
+	    *retlen = 0;
+	return 0;
+    }
+
+    ini = (U8)i8_to_utf_cp1047[*s];
+    len = UTF8M_LEN(ini);
+
+    if (curlen < len || len == 0) {
+	if (retlen)
+	    *retlen = 0;
+	return 0;
+    }
+
+    for (p = s, d = buff; (STRLEN)(p - s) < len; d++, p++)
+	*d = (U8)i8_to_utf_cp1047[*p];
+
+    return ord_in_utf8mod(buff, d - buff, retlen);
+}
+
+
+
+U8*
+app_in_utfcp1047(U8* s, UV uv)
+{
+    U8 *p, *sta, *end;
+    sta = s;
+    end = app_in_utf8mod(s, uv);
+
+    for (p = sta; p < end; p++) {
+	*p = utf_to_i8_cp1047[*p];
+    }
+    return end;
+}
 
 #endif

@@ -24,17 +24,17 @@ static UV (*ord_uv_in[])(U8 *, STRLEN, STRLEN *) = {
     ord_in_utf32be,
     ord_in_utf8,
     ord_in_utf8mod,
-    ord_in_utf8mod, /* CP-1047 */
+    ord_in_utfcp1047,
 };
 
-static STRLEN (*app_uv_in[])(U8 *, UV) = {
+static U8* (*app_uv_in[])(U8 *, UV) = {
     app_in_utf16le,
     app_in_utf16be,
     app_in_utf32le,
     app_in_utf32be,
     app_in_utf8,
     app_in_utf8mod,
-    app_in_utf8mod, /* CP-1047 */
+    app_in_utfcp1047,
 };
 
 
@@ -48,10 +48,11 @@ sv_cat_retcvref (SV *dst, SV *cv, SV *sv)
     PUSHMARK(SP);
     XPUSHs(sv_2mortal(sv));
     PUTBACK;
-    count = call_sv(cv, G_SCALAR);
+    count = call_sv(cv, G_EVAL|G_SCALAR);
     SPAGAIN;
-    if (count != 1)
-	croak("Panic in XS, " PkgName "\n");
+    if (SvTRUE(ERRSV) || count != 1) {
+	croak("died in XS, " PkgName "\n");
+    }
     sv_catsv(dst,POPs);
     PUTBACK;
     FREETMPS;
@@ -74,8 +75,8 @@ utf16le_to_unicode (arg1, arg2=0)
     utfcp1047_to_unicode = 6
   PREINIT:
     SV *src, *dst, *cvref;
-    STRLEN srclen, dstlen, retlen;
-    U8 *s, *e, *p, *d, uni[UTF8_MAXLEN + 1];
+    STRLEN srclen, dstlen, retlen, ulen;
+    U8 *s, *e, *p, *d, ubuf[UTF8_MAXLEN + 1];
     UV uv;
     UV (*ord_uv)(U8 *, STRLEN, STRLEN *);
   PPCODE:
@@ -92,19 +93,11 @@ utf16le_to_unicode (arg1, arg2=0)
 	src = sv_mortalcopy(src);
 	sv_utf8_downgrade(src, 0);
     }
-    else if (5 < ix) { /* UTF-EBCDIC */
-	src = sv_mortalcopy(src);
-    }
 
     s = (U8*)SvPV(src,srclen);
     e = s + srclen;
 
-    if (5 < ix) {
-	for (p = s; p < e; p++)
-	    *p = (U8)i8_to_utf_cp1047[*p];
-    }
-
-    dstlen = srclen * MaxLenFmUni + 1;
+    dstlen = srclen * MaxLenUni + 1;
 
     dst = sv_2mortal(newSV(dstlen));
     (void)SvPOK_only(dst);
@@ -121,15 +114,15 @@ utf16le_to_unicode (arg1, arg2=0)
 	    else
 		uv = (UV)*p++;
 
-	    if (retlen && !UTF16_IS_SURROG(uv) && VALID_UTF(uv)) {
-		(void)uvuni_to_utf8(uni, uv);
-		sv_catpvn(dst, (char*)uni, (STRLEN)UNISKIP(uv));
+	    if (retlen && !UTF16_IS_SURROG(uv) && Is_VALID_UTF(uv)) {
+		ulen = uvuni_to_utf8(ubuf, uv) - ubuf;
+		sv_catpvn(dst, (char*)ubuf, ulen);
 	    }
 	    else
 		sv_cat_retcvref(dst, cvref, newSVuv(uv));
 	}
-
-    } else {
+    }
+    else {
 	d = (U8*)SvPVX(dst);
 
 	for (p = s; p < e;) {
@@ -142,8 +135,8 @@ utf16le_to_unicode (arg1, arg2=0)
 		continue;
 	    }
 
-	    if (!UTF16_IS_SURROG(uv) && VALID_UTF(uv))
-		d = uvuni_to_utf8(d, (UV)uv);
+	    if (!UTF16_IS_SURROG(uv) && Is_VALID_UTF(uv))
+		d = uvuni_to_utf8(d, uv);
 	}
 	*d = '\0';
 	SvCUR_set(dst, d - (U8*)SvPVX(dst));
@@ -165,10 +158,11 @@ unicode_to_utf16le (arg1, arg2=0)
     unicode_to_utfcp1047 = 6
   PREINIT:
     SV *src, *dst, *cvref;
-    STRLEN srclen, dstlen, retlen, applen;
-    U8 *s, *e, *p, *d, ucs[UTF8_MAXLEN + 1];
+    STRLEN srclen, dstlen, retlen, ulen;
+    U8 *s, *e, *p, *d, ubuf[UTF8_MAXLEN + 1];
     UV uv;
-    STRLEN (*app_uv)(U8*, UV);
+    U8* (*app_uv)(U8*, UV);
+    bool touni32;
   PPCODE:
     cvref = NULL;
     if (items == 2)
@@ -179,6 +173,8 @@ unicode_to_utf16le (arg1, arg2=0)
 
     src = cvref ? arg2 : arg1;
 
+    touni32 = ix == 2 || ix == 3;
+
     if (!SvUTF8(src)) {
 	src = sv_mortalcopy(src);
 	sv_utf8_upgrade(src);
@@ -187,9 +183,8 @@ unicode_to_utf16le (arg1, arg2=0)
     s = (U8*)SvPV(src,srclen);
     e = s + srclen;
 
-    dstlen = srclen * MaxLenFmUni + 1;
-
-    if (ix == 2 || ix == 3) /*UTF32*/
+    dstlen = srclen * MaxLenUni + 1;
+    if (touni32)
 	dstlen *= 2;
 
     dst = sv_2mortal(newSV(dstlen));
@@ -200,44 +195,44 @@ unicode_to_utf16le (arg1, arg2=0)
     if (cvref) {
 	for (p = s; p < e;) {
 	    uv = utf8n_to_uvuni(p, e - p, &retlen, 0);
-	    p += retlen;
 
-	    applen = 0;
-	    if (!UTF16_IS_SURROG(uv) && VALID_UTF(uv))
-		applen = app_uv(ucs, uv);
+	    if (retlen)
+		p += retlen;
+	    else
+		uv = (UV)*p++;
 
-	    if (0 < applen)
-		sv_catpvn(dst, (char*)ucs, applen);
+	    if (retlen && !UTF16_IS_SURROG(uv) && Is_VALID_UTF(uv)) {
+		ulen = app_uv(ubuf, uv) - ubuf;
+		sv_catpvn(dst, (char*)ubuf, ulen);
+	    }
 	    else
 		sv_cat_retcvref(dst, cvref, newSVuv(uv));
 	}
     }
     else {
 	d = (U8*)SvPVX(dst);
+
 	for (p = s; p < e;) {
 	    uv = utf8n_to_uvuni(p, e - p, &retlen, 0);
-	    p += retlen;
 
-	    applen = 0;
-	    if (!UTF16_IS_SURROG(uv) && VALID_UTF(uv))
-		applen = app_uv(d, uv);
+	    if (retlen)
+		p += retlen;
+	    else {
+		p++;
+		continue;
+	    }
 
-	    if (0 < applen)
-		d += applen;
+	    if (!UTF16_IS_SURROG(uv) && Is_VALID_UTF(uv))
+		d = app_uv(d, uv);
 	}
 	*d = '\0';
 	SvCUR_set(dst, d - (U8*)SvPVX(dst));
     }
-
-    if (5 < ix) {
-	p = (U8*)SvPV(dst,dstlen);
-	for (e = p + dstlen; p < e; p++)
-	    *p = utf_to_i8_cp1047[*p];
-    }
     XPUSHs(dst);
 
 
-void
+
+SV*
 chr_utf16le (uv)
     UV  uv
   PROTOTYPE: $
@@ -250,21 +245,54 @@ chr_utf16le (uv)
     chr_utfcp1047 = 6
   PREINIT:
     SV *dst;
-    STRLEN applen;
-    U8 ucs[UTF8_MAXLEN + 1];
-    STRLEN (*app_uv)(U8*, UV);
-  PPCODE:
-    if (UTF16_IS_SURROG(uv) && !VALID_UTF(uv))
+    U8 *u, ubuf[UTF8_MAXLEN + 1];
+    U8* (*app_uv)(U8*, UV);
+  CODE:
+    if (UTF16_IS_SURROG(uv) || !Is_VALID_UTF(uv))
 	XSRETURN_UNDEF;
 
-    dst = sv_2mortal(newSV(1));
+    dst = newSVpvn("", 0);
     (void)SvPOK_only(dst);
 
     app_uv = app_uv_in[ix];
-    applen = app_uv(ucs, uv);
-    if (0 < applen) {
-	sv_catpvn(dst, (char*)ucs, applen);
-	XPUSHs(dst);
-    }
-    else
+    u = app_uv(ubuf, uv);
+    if (u == ubuf)
 	XSRETURN_UNDEF;
+
+    sv_catpvn(dst, (char*)ubuf, u - ubuf);
+    RETVAL = dst;
+  OUTPUT:
+    RETVAL
+
+
+SV*
+ord_utf16le (src)
+    SV* src
+  PROTOTYPE: $
+  ALIAS:
+    ord_utf16be = 1
+    ord_utf32le = 2
+    ord_utf32be = 3
+    ord_utf8    = 4
+    ord_utf8mod = 5
+    ord_utfcp1047 = 6
+  PREINIT:
+    STRLEN srclen, retlen;
+    U8 *s;
+    UV uv;
+    UV (*ord_uv)(U8 *, STRLEN, STRLEN *);
+  CODE:
+    if (SvUTF8(src)) {
+	src = sv_mortalcopy(src);
+	sv_utf8_downgrade(src, 0);
+    }
+
+    s = (U8*)SvPV(src,srclen);
+    ord_uv = ord_uv_in[ix];
+    uv = ord_uv(s, srclen, &retlen);
+
+    RETVAL = (retlen && !UTF16_IS_SURROG(uv) && Is_VALID_UTF(uv))
+	? newSVuv(uv) : &PL_sv_undef;
+  OUTPUT:
+    RETVAL
+
