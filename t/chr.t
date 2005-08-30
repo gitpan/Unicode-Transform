@@ -1,7 +1,7 @@
 
 BEGIN { $| = 1; print "1..100\n"; }
 
-use Unicode::Transform qw(:chr);
+use Unicode::Transform ':chr';
 use strict;
 use warnings;
 

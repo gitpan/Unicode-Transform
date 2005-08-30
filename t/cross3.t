@@ -1,7 +1,7 @@
 
 BEGIN { $| = 1; print "1..145\n"; } # 145 = 6 * 6 * 4 + 1
 
-use Unicode::Transform qw(:all);
+use Unicode::Transform ':all';
 use strict;
 use warnings;
 

@@ -1,4 +1,4 @@
-Unicode::Transform version 0.32
+Unicode::Transform version 0.33
 ================
 
 NAME
@@ -17,19 +17,22 @@ DESCRIPTION
 
 This module supports the following UTF:
 
-    unicode    (for Perl's internal strings; see perlunicode)
+    unicode    (for Perl internal Unicode encoding; see perlunicode)
     utf16le    (for UTF-16LE)
     utf16be    (for UTF-16BE)
     utf32le    (for UTF-32LE)
     utf32be    (for UTF-32BE)
     utf8       (for UTF-8)
     utf8mod    (for UTF-8-Mod)
-    utfcp1047  (for CP-1047-oriented UTF-EBCDIC).
+    utfcp1047  (for CP1047-oriented UTF-EBCDIC).
 
 where hyphen-removed and lowercased names are used as
 a part of a function name (like <something>_to_<something>).
 
 INSTALLATION
+
+Perl 5.6.1 or later is required. (For Perl internal
+Unicode encoding, Perl 5.8.1 or later is recommended.)
 
 You need a C compiler to build this module.
 To install this module type the following:
@@ -39,21 +42,11 @@ To install this module type the following:
     make test
     make install
 
-DEPENDENCIES
+COPYRIGHT AND LICENSE
 
-    Perl 5.6.1 or later
+SADAHIRO Tomoyuki <SADAHIRO@cpan.org>
 
-COPYRIGHT AND LICENCE
+Copyright(C) 2002-2005, SADAHIRO Tomoyuki. Japan. All rights reserved.
 
-    SADAHIRO Tomoyuki <SADAHIRO@cpan.org>
-
-        http://homepage1.nifty.com/nomenclator/perl/
-
-    Copyright(C) 2002-2003, SADAHIRO Tomoyuki. Japan. All rights reserved.
-
-    This module is free software; you can redistribute it
-    and/or modify it under the same terms as Perl itself.
-
-SEE ALSO
-
-L<perlunicode>
+This module is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.

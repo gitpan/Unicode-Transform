@@ -1,7 +1,8 @@
 Changes
 Makefile.PL
-README
 MANIFEST
+README
+META.yml
 Transform.pm
 Transform.xs
 unitrans.h
@@ -9,6 +10,7 @@ t/chr.t
 t/cross1.t
 t/cross2.t
 t/cross3.t
+t/ext32bit.t
 t/handler.t
 t/ord.t
 t/test.t

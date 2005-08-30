@@ -49,7 +49,7 @@ app_in_unicode(U8* s, UV uv)
 
 /***************************************
 
-All UTFs are limited in 0..D7FF and E000..10FFFF for roundtrap.
+All UTFs are limited in 0..D7FF and E000..10FFFF for roundtrip.
 
 (i) on ASCII platform
 
@@ -567,7 +567,7 @@ app_in_utf8mod(U8* s, UV uv)
 }
 
 
-static U8 i8_to_utf_cp1047[] = {
+static U8 u2i_cp1047[] = {
   0x00, 0x01, 0x02, 0x03, 0x9C, 0x09, 0x86, 0x7F,
   0x97, 0x8D, 0x8E, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
   0x10, 0x11, 0x12, 0x13, 0x9D, 0x0A, 0x08, 0x87,
@@ -608,11 +608,11 @@ static U8 i8_to_utf_cp1047[] = {
 UV
 ord_in_utfcp1047(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
-    return ord_in_utfebcdic(s, curlen, retlen, i8_to_utf_cp1047);
+    return ord_in_utfebcdic(s, curlen, retlen, u2i_cp1047);
 }
 
 
-static U8 utf_to_i8_cp1047[] = {
+static U8 i2u_cp1047[] = {
   0x00, 0x01, 0x02, 0x03, 0x37, 0x2D, 0x2E, 0x2F,
   0x16, 0x05, 0x15, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
   0x10, 0x11, 0x12, 0x13, 0x3C, 0x3D, 0x32, 0x26,
@@ -653,7 +653,7 @@ static U8 utf_to_i8_cp1047[] = {
 U8*
 app_in_utfcp1047(U8* s, UV uv)
 {
-    return app_in_utfebcdic(s, uv, utf_to_i8_cp1047);
+    return app_in_utfebcdic(s, uv, i2u_cp1047);
 }
 
 

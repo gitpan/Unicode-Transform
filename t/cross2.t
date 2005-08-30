@@ -1,7 +1,7 @@
 
 BEGIN { $| = 1; print "1..321\n"; } # 321 = 8 * 8 * 5 + 1
 
-use Unicode::Transform qw(:all);
+use Unicode::Transform ':conv';
 use strict;
 use warnings;
 

@@ -1,5 +1,10 @@
 Revision history for Perl module Unicode::Transform.
 
+0.33  Tue Aug 30 21:27:30 2005
+    - improvement of documentation.
+    - added ext32bit.t.
+    - added META.yml.
+
 0.32  Sun Nov 30 19:57:01 2003
     - modified doc.
     - UTF-32BE,LE : chr_utf32(be|le) now cope with code points
