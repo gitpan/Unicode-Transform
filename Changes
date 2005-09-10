@@ -1,8 +1,12 @@
 Revision history for Perl module Unicode::Transform.
 
+0.34  Sat Sep 10 11:58:14 2005
+    - ord_in_utf32(be|le): avoided promotion from 32-bit int to 64-bit UV.
+     (Note: but no test for UV > 0xFFFF_FFFF is included yet.)
+
 0.33  Tue Aug 30 21:27:30 2005
     - improvement of documentation.
-    - added ext32bit.t.
+    - added ext32bit.t (for UV within 0x8000_0000..0xFFFF_FFFF).
     - added META.yml.
 
 0.32  Sun Nov 30 19:57:01 2003

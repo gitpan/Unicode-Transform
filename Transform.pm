@@ -10,7 +10,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 require Exporter;
 require DynaLoader;
 
-$VERSION = '0.33';
+$VERSION = '0.34';
 
 @ISA = qw(Exporter DynaLoader);
 

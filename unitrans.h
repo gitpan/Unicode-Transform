@@ -23,7 +23,7 @@
 #define AllowAnyUTF (UTF8_ALLOW_SURROGATE|UTF8_ALLOW_FE_FF|UTF8_ALLOW_FFFF)
 #endif
 
-UV
+static UV
 ord_in_unicode(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
 
@@ -40,7 +40,7 @@ ord_in_unicode(U8 *s, STRLEN curlen, STRLEN *retlen)
     return uv;
 }
 
-U8*
+static U8*
 app_in_unicode(U8* s, UV uv)
 {
     return uvuni_to_utf8(s, uv);
@@ -159,11 +159,11 @@ All UTFs are limited in 0..D7FF and E000..10FFFF for roundtrip.
 	  (b) < 0xF8 ? 4 :	\
 	  (b) < 0xFC ? 5 :	\
 	  (b) < 0xFE ? 6 :	\
-	  (b) <= 0xFF ? 7 : 0)
+		       7) /* ((b) == 0xFF) */
 
 #define UTF8M_MaxLEN	(8)
 
-UV
+static UV
 ord_in_utf16le(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
     UV uv, luv;
@@ -193,7 +193,7 @@ ord_in_utf16le(U8 *s, STRLEN curlen, STRLEN *retlen)
 }
 
 
-UV
+static UV
 ord_in_utf16be(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
     UV uv, luv;
@@ -223,9 +223,10 @@ ord_in_utf16be(U8 *s, STRLEN curlen, STRLEN *retlen)
 }
 
 
-UV
+static UV
 ord_in_utf32le(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
+    UV uv; int i;
     if (curlen < 4) {
 	if (retlen)
 	    *retlen = 0;
@@ -234,13 +235,20 @@ ord_in_utf32le(U8 *s, STRLEN curlen, STRLEN *retlen)
 
     if (retlen)
 	*retlen = 4;
-    return (UV)((s[3] << 24) | (s[2] << 16) | (s[1] << 8) | s[0]);
+
+    uv = s[3];
+    for (i = 2; i >= 0; --i) {
+	uv <<= 8;
+	uv |= s[i];
+    }
+    return uv;
 }
 
 
-UV
+static UV
 ord_in_utf32be(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
+    UV uv; U8* e;
     if (curlen < 4) {
 	if (retlen)
 	    *retlen = 0;
@@ -249,11 +257,18 @@ ord_in_utf32be(U8 *s, STRLEN curlen, STRLEN *retlen)
 
     if (retlen)
 	*retlen = 4;
-    return (UV)((s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3]);
+
+    e = s + 4;
+    uv = *s++;
+    while (s < e) {
+	uv <<= 8;
+	uv |= *s++;
+    }
+    return uv;
 }
 
 
-UV
+static UV
 ord_in_utf8(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
     UV uv = 0;
@@ -314,7 +329,7 @@ ord_in_utf8(U8 *s, STRLEN curlen, STRLEN *retlen)
 }
 
 
-UV
+static UV
 ord_in_utfebcdic(U8 *s, STRLEN curlen, STRLEN *retlen, U8* i2e_table)
 {
     UV uv = 0;
@@ -366,7 +381,7 @@ ord_in_utfebcdic(U8 *s, STRLEN curlen, STRLEN *retlen, U8* i2e_table)
 		  ((s[2] & 0x1f) << 15) | ((s[3] & 0x1f) << 10) |
 		  ((s[4] & 0x1f) <<  5) |  (s[5] & 0x1f));
     }
-    else if (*s <= 0xFF) {
+    else { /* (*s == 0xFF) */
 	uv = (UV)(((s[0] & 0x01) << 30) | ((s[1] & 0x1f) << 25) |
 		  ((s[2] & 0x1f) << 20) | ((s[3] & 0x1f) << 15) |
 		  ((s[4] & 0x1f) << 10) | ((s[5] & 0x1f) <<  5) |
@@ -388,14 +403,14 @@ ord_in_utfebcdic(U8 *s, STRLEN curlen, STRLEN *retlen, U8* i2e_table)
 }
 
 
-UV
+static UV
 ord_in_utf8mod(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
     return ord_in_utfebcdic(s, curlen, retlen, NULL);
 }
 
 
-U8*
+static U8*
 app_in_utf16le(U8* s, UV uv)
 {
     if (uv <= 0xFFFF) {
@@ -416,7 +431,7 @@ app_in_utf16le(U8* s, UV uv)
 }
 
 
-U8*
+static U8*
 app_in_utf16be(U8* s, UV uv)
 {
     if (uv <= 0xFFFF) {
@@ -437,7 +452,7 @@ app_in_utf16be(U8* s, UV uv)
 }
 
 
-U8*
+static U8*
 app_in_utf32le(U8* s, UV uv)
 {
     if (uv <= UV_Max_UTF32) {
@@ -450,7 +465,7 @@ app_in_utf32le(U8* s, UV uv)
 }
 
 
-U8*
+static U8*
 app_in_utf32be(U8* s, UV uv)
 {
     if (uv <= UV_Max_UTF32) {
@@ -463,7 +478,7 @@ app_in_utf32be(U8* s, UV uv)
 }
 
 
-U8*
+static U8*
 app_in_utf8(U8* s, UV uv)
 {
     if (uv < 0x80) {
@@ -503,7 +518,7 @@ app_in_utf8(U8* s, UV uv)
 }
 
 
-U8*
+static U8*
 app_in_utfebcdic(U8* s, UV uv, U8* e2i_table)
 {
     U8* p = s;
@@ -560,7 +575,7 @@ app_in_utfebcdic(U8* s, UV uv, U8* e2i_table)
 }
 
 
-U8*
+static U8*
 app_in_utf8mod(U8* s, UV uv)
 {
     return app_in_utfebcdic(s, uv, NULL);
@@ -605,7 +620,7 @@ static U8 u2i_cp1047[] = {
   0x38, 0x39, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x9F,
 };
 
-UV
+static UV
 ord_in_utfcp1047(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
     return ord_in_utfebcdic(s, curlen, retlen, u2i_cp1047);
@@ -650,12 +665,10 @@ static U8 i2u_cp1047[] = {
   0xED, 0xEE, 0xEF, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE,
 };
 
-U8*
+static U8*
 app_in_utfcp1047(U8* s, UV uv)
 {
     return app_in_utfebcdic(s, uv, i2u_cp1047);
 }
-
-
 
 #endif
