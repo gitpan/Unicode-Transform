@@ -1,5 +1,9 @@
 Revision history for Perl module Unicode::Transform.
 
+0.40  Mon Jan 10 13:19:14 2011
+    - unitrans.h: a provision against the case when UTF8_ALLOW_* flags
+                  may be undefined in future.
+
 0.34  Sat Sep 10 11:58:14 2005
     - ord_in_utf32(be|le): avoided promotion from 32-bit int to 64-bit UV.
      (Note: but no test for UV > 0xFFFF_FFFF is included yet.)

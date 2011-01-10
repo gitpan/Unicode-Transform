@@ -17,11 +17,24 @@
 #endif /* UTF8_IS_INVARIANT */
 
 /* UTF8_ALLOW_BOM is used before Perl 5.8.0 */
-#ifdef UTF8_ALLOW_BOM
+#ifndef UTF8_ALLOW_BOM
+#define UTF8_ALLOW_BOM  (0)
+#endif /* UTF8_ALLOW_BOM */
+
+#ifndef UTF8_ALLOW_SURROGATE
+#define UTF8_ALLOW_SURROGATE  (0)
+#endif /* UTF8_ALLOW_SURROGATE */
+
+#ifndef UTF8_ALLOW_FE_FF
+#define UTF8_ALLOW_FE_FF  (0)
+#endif /* UTF8_ALLOW_FE_FF */
+
+#ifndef UTF8_ALLOW_FFFF
+#define UTF8_ALLOW_FFFF  (0)
+#endif /* UTF8_ALLOW_FFFF */
+
 #define AllowAnyUTF (UTF8_ALLOW_SURROGATE|UTF8_ALLOW_BOM|UTF8_ALLOW_FE_FF|UTF8_ALLOW_FFFF)
-#else
-#define AllowAnyUTF (UTF8_ALLOW_SURROGATE|UTF8_ALLOW_FE_FF|UTF8_ALLOW_FFFF)
-#endif
+
 
 static UV
 ord_in_unicode(U8 *s, STRLEN curlen, STRLEN *retlen)
@@ -330,7 +343,7 @@ ord_in_utf8(U8 *s, STRLEN curlen, STRLEN *retlen)
 
 
 static UV
-ord_in_utfebcdic(U8 *s, STRLEN curlen, STRLEN *retlen, U8* i2e_table)
+ord_in_utfebcdic(U8 *s, STRLEN curlen, STRLEN *retlen, U8* table)
 {
     UV uv = 0;
     U8 ini, *p, *d, buff[UTF8M_MaxLEN];
@@ -342,7 +355,7 @@ ord_in_utfebcdic(U8 *s, STRLEN curlen, STRLEN *retlen, U8* i2e_table)
 	return 0;
     }
 
-    ini = i2e_table ? i2e_table[*s] : *s;
+    ini = table ? table[*s] : *s;
     len = (STRLEN) UTF8M_LEN(ini);
 
     if (curlen < len || len == 0) {
@@ -351,9 +364,9 @@ ord_in_utfebcdic(U8 *s, STRLEN curlen, STRLEN *retlen, U8* i2e_table)
 	return 0;
     }
 
-    if (i2e_table) {
+    if (table) {
 	for (p = s, d = buff; (STRLEN)(p - s) < len; d++, p++)
-	    *d = i2e_table[*p];
+	    *d = table[*p];
 	s = buff;
     }
 
@@ -519,7 +532,7 @@ app_in_utf8(U8* s, UV uv)
 
 
 static U8*
-app_in_utfebcdic(U8* s, UV uv, U8* e2i_table)
+app_in_utfebcdic(U8* s, UV uv, U8* table)
 {
     U8* p = s;
 
@@ -566,9 +579,9 @@ app_in_utfebcdic(U8* s, UV uv, U8* e2i_table)
 	*s++ = (U8)(( uv        & 0x1f) | 0xa0);
     }
 
-    if (e2i_table) {
+    if (table) {
 	for ( ; p < s; p++)
-	    *p = e2i_table[*p];
+	    *p = table[*p];
     }
 
     return s;
@@ -582,7 +595,7 @@ app_in_utf8mod(U8* s, UV uv)
 }
 
 
-static U8 u2i_cp1047[] = {
+static U8 e2i_cp1047[] = {
   0x00, 0x01, 0x02, 0x03, 0x9C, 0x09, 0x86, 0x7F,
   0x97, 0x8D, 0x8E, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
   0x10, 0x11, 0x12, 0x13, 0x9D, 0x0A, 0x08, 0x87,
@@ -623,11 +636,11 @@ static U8 u2i_cp1047[] = {
 static UV
 ord_in_utfcp1047(U8 *s, STRLEN curlen, STRLEN *retlen)
 {
-    return ord_in_utfebcdic(s, curlen, retlen, u2i_cp1047);
+    return ord_in_utfebcdic(s, curlen, retlen, e2i_cp1047);
 }
 
 
-static U8 i2u_cp1047[] = {
+static U8 i2e_cp1047[] = {
   0x00, 0x01, 0x02, 0x03, 0x37, 0x2D, 0x2E, 0x2F,
   0x16, 0x05, 0x15, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
   0x10, 0x11, 0x12, 0x13, 0x3C, 0x3D, 0x32, 0x26,
@@ -668,7 +681,7 @@ static U8 i2u_cp1047[] = {
 static U8*
 app_in_utfcp1047(U8* s, UV uv)
 {
-    return app_in_utfebcdic(s, uv, i2u_cp1047);
+    return app_in_utfebcdic(s, uv, i2e_cp1047);
 }
 
 #endif
