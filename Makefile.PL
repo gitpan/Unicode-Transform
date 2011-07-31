@@ -7,4 +7,5 @@ WriteMakefile(
     'VERSION_FROM'	=> 'Transform.pm',
     'ABSTRACT_FROM'	=> 'Transform.pm',
     'AUTHOR'		=> 'SADAHIRO Tomoyuki <SADAHIRO@cpan.org>',
+    'LICENSE'		=> 'perl',
 );

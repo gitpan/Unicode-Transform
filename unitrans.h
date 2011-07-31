@@ -684,4 +684,4 @@ app_in_utfcp1047(U8* s, UV uv)
     return app_in_utfebcdic(s, uv, i2e_cp1047);
 }
 
-#endif
+#endif /* UNITRANS_H */

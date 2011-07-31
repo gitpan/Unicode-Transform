@@ -1,8 +1,8 @@
 Changes
 Makefile.PL
 MANIFEST
-README
 META.yml
+README
 Transform.pm
 Transform.xs
 unitrans.h

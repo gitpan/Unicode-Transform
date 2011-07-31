@@ -1,7 +1,10 @@
 Revision history for Perl module Unicode::Transform.
 
+0.50  Sun Jul 31 10:28:09 2011
+    - fix the tarball with world writable files.
+
 0.40  Mon Jan 10 13:19:14 2011
-    - unitrans.h: a provision against the case when UTF8_ALLOW_* flags
+    - unitrans.h: provision against the case when UTF8_ALLOW_* flags
                   may be undefined in future.
 
 0.34  Sat Sep 10 11:58:14 2005
