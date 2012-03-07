@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Unicode-Transform
-version:            0.50
+version:            0.51
 abstract:           conversion among Unicode Transformation Formats
 author:
     - SADAHIRO Tomoyuki <SADAHIRO@cpan.org>
@@ -10,7 +10,11 @@ configure_requires:
     ExtUtils::MakeMaker:  0
 build_requires:
     ExtUtils::MakeMaker:  0
-requires:  {}
+requires:
+    DynaLoader:  0
+    Exporter:    0
+    strict:      0
+    warnings:    0
 no_index:
     directory:
         - t

@@ -5,14 +5,12 @@ require 5.006001;
 use strict;
 no warnings 'utf8';
 
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-
 require Exporter;
 require DynaLoader;
 
-$VERSION = '0.50';
+our $VERSION = '0.51';
 
-@ISA = qw(Exporter DynaLoader);
+our @ISA = qw(Exporter DynaLoader);
 
 our @UTF_names = qw(utf16le utf16be utf32le utf32be utf8 utf8mod utfcp1047);
 our @Codenames = ("unicode", @UTF_names);
@@ -30,8 +28,8 @@ for my $a (@Codenames) {
     }
 }
 
-@EXPORT    = (map @$_, @EXPORT_TAGS{qw(from to)});
-@EXPORT_OK = (map @$_, @EXPORT_TAGS{qw(conv chr ord)});
+our @EXPORT    = (map @$_, @EXPORT_TAGS{qw(from to)});
+our @EXPORT_OK = (map @$_, @EXPORT_TAGS{qw(conv chr ord)});
 $EXPORT_TAGS{'all'} = \ @EXPORT_OK;
 
 bootstrap Unicode::Transform $VERSION;
